@@ -40,6 +40,7 @@ class JobAnketa(StatesGroup):
     age = State()            
     requirements = State()   
     salary = State()         
+    work_schedule = State()  # <-- Ish kuni va soati uchun yangi qadam
     location = State()       
     phone = State()          
     waiting_for_receipt = State() 
@@ -55,18 +56,15 @@ async def check_subscriptions(user_id: int, bot: Bot) -> bool:
     for channel in db["forced_channels"]:
         try:
             member = await bot.get_chat_member(chat_id=channel, user_id=user_id)
-            # Agar foydalanuvchi tark etgan, kick qilingan yoki obuna bo'lmagan bo'lsa
             if member.status in ["left", "kicked"]:
                 return False
         except Exception:
-            # Agar bot kanalga admin bo'lmasa yoki xatolik yuzaga kelsa, xavfsizlik uchun False qaytarish mumkin
             return False
     return True
 
 async def get_sub_keyboard():
     keyboard = []
     for channel in db["forced_channels"]:
-        # Kanal nomidan havolali tugma yasash (masalan: @Ishbor_Live -> t.me/Ishbor_Live)
         channel_link = f"https://t.me/{channel.replace('@', '')}"
         keyboard.append([InlineKeyboardButton(text=f"📢 {channel} ga obuna bo'lish", url=channel_link)])
     
@@ -106,7 +104,6 @@ async def cmd_start(message: Message, state: FSMContext):
         await message.answer("<b>👑 Admin paneliga xush kelibsiz!</b>", reply_markup=keyboard, parse_mode="HTML")
         return
 
-    # Oddiy foydalanuvchi uchun obunani tekshirish
     is_subscribed = await check_subscriptions(user_id, message.bot)
     if not is_subscribed:
         await message.answer(
@@ -125,7 +122,6 @@ async def cmd_start(message: Message, state: FSMContext):
         parse_mode="HTML"
     )
 
-# --- OBUNANI TEKSHIRISH TUGMASI ---
 @router.callback_query(F.data == "check_sub")
 async def check_sub_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -178,7 +174,7 @@ async def start_anketa(callback: CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await callback.message.edit_text(
-        "📋 <b>Ish e'lonini berish (1/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (1/10):</b>\n\n"
         "E'longa mos biron bir rasm (banner) yuboring.\n"
         "<i>Agar rasm bo'lmasa, quyidagi tugmani bosing:</i>",
         reply_markup=skip_kb,
@@ -208,7 +204,7 @@ async def wrong_photo_format(message: Message):
 
 async def ask_region(message: Message, state: FSMContext, is_callback: bool):
     text = (
-        "📋 <b>Ish e'lonini berish (2/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (2/10):</b>\n\n"
         "Ish joyi qaysi viloyatda joylashgan? Quyidagilardan birini tanlang:"
     )
     keyboard = get_regions_keyboard()
@@ -227,7 +223,7 @@ async def process_region_callback(callback: CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await callback.message.edit_text(
-        f"📋 <b>Ish e'lonini berish (3/9):</b>\n\n"
+        f"📋 <b>Ish e'lonini berish (3/10):</b>\n\n"
         f"Tanlangan viloyat: <b>{selected_region}</b>\n\n"
         f"Kompaniya yoki tashkilot nomini kiriting:\n"
         f"<i>(Masalan: \"Artel\" MChJ yoki \"Ziyo\" o'quv markazi)</i>",
@@ -244,7 +240,7 @@ async def process_company(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await message.answer(
-        "📋 <b>Ish e'lonini berish (4/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (4/10):</b>\n\n"
         "Qaysi lavozimga ishchi kerak?\n"
         "<i>(Masalan: Sotuvchi, Ofis menejeri, Haydovchi)</i>",
         reply_markup=cancel_kb,
@@ -259,7 +255,7 @@ async def process_position(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await message.answer(
-        "📋 <b>Ish e'lonini berish (5/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (5/10):</b>\n\n"
         "Nomzodning yoshi necha oralig'ida bo'lishi kerak?\n"
         "<i>(Masalan: 18 - 35 yosh yoki Farqi yo'q)</i>",
         reply_markup=cancel_kb,
@@ -274,7 +270,7 @@ async def process_age(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await message.answer(
-        "📋 <b>Ish e'lonini berish (6/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (6/10):</b>\n\n"
         "Nomzodga qo'yiladigan talablar va vazifalar qanday? Qisqacha yozing:",
         reply_markup=cancel_kb,
         parse_mode="HTML"
@@ -288,7 +284,7 @@ async def process_requirements(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await message.answer(
-        "📋 <b>Ish e'lonini berish (7/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (7/10):</b>\n\n"
         "Ish haqi (Maosh) qancha?\n"
         "<i>(Masalan: 4 - 6 mln so'm yoki Kelishiladi)</i>",
         reply_markup=cancel_kb,
@@ -303,7 +299,22 @@ async def process_salary(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await message.answer(
-        "📋 <b>Ish e'lonini berish (8/9):</b>\n\n"
+        "📋 <b>Ish kuni va vaqti (8/10):</b>\n\n"
+        "Ish kunlari va ish vaqtini kiriting:\n"
+        "<i>(Masalan: Dushanba - Shanba, 09:00 - 18:00 yoki 6/1, 08:00 dan 17:00 gacha)</i>",
+        reply_markup=cancel_kb,
+        parse_mode="HTML"
+    )
+    await state.set_state(JobAnketa.work_schedule)
+
+@router.message(JobAnketa.work_schedule, F.text)
+async def process_work_schedule(message: Message, state: FSMContext):
+    await state.update_data(work_schedule=message.text)
+    cancel_kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
+    ])
+    await message.answer(
+        "📋 <b>Ish e'lonini berish (9/10):</b>\n\n"
         "Aniq manzilni kiriting (tumani, ko'chasi, mo'ljal):\n"
         "<i>(Masalan: Chilonzor tumani, 9-kvartal, Muqimiy ko'chasi)</i>",
         reply_markup=cancel_kb,
@@ -318,7 +329,7 @@ async def process_location(message: Message, state: FSMContext):
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="main_menu")]
     ])
     await message.answer(
-        "📋 <b>Ish e'lonini berish (9/9):</b>\n\n"
+        "📋 <b>Ish e'lonini berish (10/10):</b>\n\n"
         "Bog'lanish uchun telefon raqamingiz va mas'ul shaxs ismi:\n"
         "<i>(Masalan: +998 90 123-45-67, Botir aka)</i>",
         reply_markup=cancel_kb,
@@ -374,6 +385,7 @@ async def get_receipt(message: Message, state: FSMContext):
         f"👤 <b>Yosh chegarasi:</b> {data['age']}\n"
         f"📌 <b>Talablar:</b> {data['requirements']}\n"
         f"💰 <b>Maosh:</b> {data['salary']}\n"
+        f"⏰ <b>Ish vaqti:</b> {data['work_schedule']}\n"
         f"📍 <b>Manzil:</b> {data['location']}\n"
         f"📞 <b>Aloqa:</b> {data['phone']}"
     )
@@ -479,8 +491,9 @@ async def handle_moderation(callback: CallbackQuery):
         f"🏢 <b>Kompaniya:</b> {data['company']}\n"
         f"💼 <b>Ish o'rni:</b> {data['position']}\n\n"
         f"👤 <b>Yosh chegarasi:</b> {data['age']}\n"
-        f"📋 <b>Talablar:</b> {data['requirements']}\n"
+        f"📌 <b>Talablar:</b> {data['requirements']}\n"
         f"💰 <b>Maosh:</b> {data['salary']}\n"
+        f"⏰ <b>Ish vaqti:</b> {data['work_schedule']}\n"
         f"📍 <b>Manzil:</b> {data['location']}\n"
         f"📞 <b>Aloqa:</b> {data['phone']}"
         f"</blockquote>\n\n"
