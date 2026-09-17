@@ -76,7 +76,7 @@ async def get_sub_keyboard():
 def get_user_menu():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📝 Ish e'lonini berish", callback_data="user_post")],
-        [InlineKeyboardButton(text="ℹ️ Bot haqida", callback_data="user_about")],
+        [InlineKeyboardButton(text="ⓘ Bot haqida", callback_data="user_about")],
         [InlineKeyboardButton(text="📞 Bog'lanish", callback_data="user_support")]
     ])
 
@@ -531,7 +531,7 @@ async def support_info(callback: CallbackQuery):
     back_kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="« Orqaga", callback_data="main_menu")]
     ])
-    await callback.message.edit_text("📞 Murojaat uchun: @admin_username", reply_markup=back_kb)
+    await callback.message.edit_text("📞 Murojaat uchun: @mekhanizatsiya", reply_markup=back_kb)
     await callback.answer()
 
 async def main():
